@@ -1,0 +1,60 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String         @id @default(uuid())
+  sessionToken  String         @unique @default(uuid())
+  assessments   Assessment[]
+  subscription  Subscription?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+}
+
+model Assessment {
+  id              String    @id @default(uuid())
+  userId          String
+  user            User      @relation(fields: [userId], references: [id])
+
+  // 进度
+  step            Int       @default(0)
+  isCompleted     Boolean   @default(false)
+
+  // 用户输入 (分步填充，逐步非空)
+  gender          String?
+  goal            String?
+  age             Int?
+  heightCm        Float?
+  weightKg        Float?
+  targetWeightKg  Float?
+  activityLevel   String?
+
+  // 计算结果 (submit 后写入)
+  bmi             Float?
+  dailyCalories   Float?
+  predictedDate   DateTime?
+
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([userId])
+}
+
+model Subscription {
+  id         String   @id @default(uuid())
+  userId     String   @unique
+  user       User     @relation(fields: [userId], references: [id])
+  status     String   @default("none")
+  planType   String?
+  paidAt     DateTime?
+  expiresAt  DateTime?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([userId])
+}
