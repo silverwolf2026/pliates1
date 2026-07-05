@@ -34,7 +34,9 @@
       "Bash(mkdir -p .claude/agents)",
       "WebSearch",
       "Bash(curl -s http://121.43.48.184/api/v1/health)",
-      "Bash(curl -s -X POST http://121.43.48.184/api/v1/session)"
+      "Bash(curl -s -X POST http://121.43.48.184/api/v1/session)",
+      "Bash(git commit -m 'refactor: 架构重构+生产化部署准备 *)",
+      "Bash(git commit *)"
     ],
     "additionalDirectories": [
       "d:\\ccvs\\pilates\\.claude"
