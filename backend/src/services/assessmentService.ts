@@ -2,7 +2,7 @@ import { Prisma } from '@prisma/client';
 import { prisma } from '../db/prisma';
 import { StepData } from '../schemas/assessment';
 import { ValidationError, NotFoundError } from '../utils/errors';
-import { calculateHealth } from './healthCalculator';
+import { calculateHealth, type Goal, type ActivityLevel } from './healthCalculator';
 
 // ===== 类型定义 =====
 
@@ -150,14 +150,14 @@ export async function submitAssessment(userId: string): Promise<SubmitResult> {
     throw new ValidationError(`Incomplete data: ${missing.join(', ')}`);
   }
 
-  // 执行计算
+  // 执行计算（类型安全：上面已验证各字段不为 null）
   const result = calculateHealth({
     gender: assessment.gender,
-    goal: assessment.goal,
+    goal: assessment.goal as Goal,
     age: assessment.age,
     weightKg: assessment.weightKg,
     heightCm: assessment.heightCm,
-    activityLevel: assessment.activityLevel,
+    activityLevel: assessment.activityLevel as ActivityLevel,
     targetWeightKg: assessment.targetWeightKg,
   });
 

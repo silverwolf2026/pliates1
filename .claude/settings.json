@@ -55,7 +55,8 @@
       "Bash(netstat -aon)",
       "Bash(awk '{print $NF}')",
       "Bash(xargs -I{} taskkill //F //PID {})",
-      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:5173/)"
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:5173/)",
+      "Bash(npx tsc *)"
     ],
     "additionalDirectories": [
       "d:\\ccvs\\pilates\\.claude"

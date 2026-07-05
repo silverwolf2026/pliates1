@@ -15,6 +15,8 @@ export const ACTIVITY_MULTIPLIERS = {
   extreme: 1.9,
 } as const;
 
+export type ActivityLevel = keyof typeof ACTIVITY_MULTIPLIERS;
+
 export const GOAL_CALORIE_ADJUSTMENT = {
   lose_weight: -500,
   gain_muscle: 300,
@@ -22,13 +24,15 @@ export const GOAL_CALORIE_ADJUSTMENT = {
   improve_flexibility: 0,
 } as const;
 
+export type Goal = keyof typeof GOAL_CALORIE_ADJUSTMENT;
+
 export interface CalculatorInput {
   gender: string;
   age: number;
   weightKg: number;
   heightCm: number;
-  activityLevel: string;
-  goal: string;
+  activityLevel: ActivityLevel;
+  goal: Goal;
   targetWeightKg: number;
 }
 
@@ -87,8 +91,8 @@ export function calculateDailyCalories(
   age: number,
   weightKg: number,
   heightCm: number,
-  activityLevel: string,
-  goal: string,
+  activityLevel: ActivityLevel,
+  goal: Goal,
 ): number {
   const bmr = calculateBMR(gender, weightKg, heightCm, age);
   const activityMultiplier =
