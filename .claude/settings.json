@@ -36,7 +36,16 @@
       "Bash(curl -s http://121.43.48.184/api/v1/health)",
       "Bash(curl -s -X POST http://121.43.48.184/api/v1/session)",
       "Bash(git commit -m 'refactor: 架构重构+生产化部署准备 *)",
-      "Bash(git commit *)"
+      "Bash(git commit *)",
+      "Bash(pg_isready -U postgres)",
+      "Bash(net start *)",
+      "Bash(psql -U postgres -lqt)",
+      "Bash(psql -U postgres -c \"SELECT 1\")",
+      "Bash(PGPASSWORD=1 psql -U postgres -c \"SELECT 1 AS connected\")",
+      "Bash(PGPASSWORD=1 psql -U postgres -lqt)",
+      "Bash(npx prisma *)",
+      "Bash(npm test *)",
+      "Bash(npm run *)"
     ],
     "additionalDirectories": [
       "d:\\ccvs\\pilates\\.claude"

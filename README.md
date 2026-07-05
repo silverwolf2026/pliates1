@@ -146,28 +146,54 @@ pilates/
 
 ## 数据库设计
 
-### 表关系
+### ER 图
 
+```mermaid
+erDiagram
+    User {
+        string id UUID
+        string sessionToken UUID "unique"
+        datetime createdAt
+        datetime updatedAt
+    }
+    Assessment {
+        string id UUID
+        string userId FK
+        int step "进度 0-5"
+        boolean isCompleted "是否已提交"
+        string gender "male | female"
+        string goal "lose_weight | gain_musile | maintain | improve_flexibility"
+        int age "10-120"
+        float heightCm "cm"
+        float weightKg "kg"
+        float targetWeightKg "kg"
+        string activityLevel "sedentary | light | moderate | heavy | extreme"
+        float bmi "评估结果，submit 后写入"
+        float dailyCalories "评估结果，submit 后写入"
+        datetime predictedDate "评估结果，submit 后写入"
+        datetime createdAt
+        datetime updatedAt
+    }
+    Subscription {
+        string id UUID
+        string userId FK "unique"
+        string status "none | active | expired"
+        string planType "monthly | yearly"
+        datetime paidAt "支付时间"
+        datetime expiresAt "到期时间"
+        datetime createdAt
+        datetime updatedAt
+    }
+    User ||--o{ Assessment : "测评"
+    User ||--o| Subscription : "订阅"
 ```
-User  1──*  Assessment      # 一个用户可多次测评
-User  1──0..1 Subscription  # 一个用户最多一个订阅
-```
-
-### Assessment 表（核心数据表）
-
-| 字段 | 类型 | 说明 |
-|---|---|---|
-| step | Int | 当前完成步数 (0-5) |
-| isCompleted | Boolean | 是否已提交通算 |
-| gender / goal / age / ... | 各类型 | 用户输入（逐步填充，初始为空） |
-| bmi / dailyCalories / predictedDate | 各类型 | 计算结果（submit 后写入） |
 
 ### 设计要点
 
 - **所有输入字段可空** — 支持分步保存，逐步填充
 - **`step` 只增不减** — 防止客户端乱序覆盖
-- **计算结果 submit 后写入** — 初始为 null
-- **Subscription 的 `userId` 加 `@unique`** — 一用户一订阅
+- **计算结果 submit 后写入** — bmi / dailyCalories / predictedDate 初始为 null
+- **Subscription `userId` 加 `@unique`** — 一用户一订阅
 - **`sessionToken` 用 UUID** — 无登录系统，匿名使用
 
 ---
@@ -229,7 +255,7 @@ POST /api/v1/session
 
 | 字段 | 类型 | 范围 |
 |---|---|---|
-| gender | enum | male / female / other |
+| gender | enum | male / female |
 | goal | enum | lose_weight / gain_muscle / maintain / improve_flexibility |
 | age | number | 10 ~ 120 |
 | heightCm | number | 50 ~ 250 |
@@ -390,26 +416,30 @@ curl -s -X POST http://121.43.48.184/api/v1/session
 
 # 记下返回的 sessionToken，替换下面的 <token>
 
-# 2. 分步保存
+# 2. 分步保存（每步都需带 Content-Type: application/json）
 curl -s -X POST http://121.43.48.184/api/v1/assessment/step \
   -H "Content-Type: application/json" \
   -H "x-session-token: <token>" \
   -d '{"step":1,"data":{"gender":"female","goal":"lose_weight"}}'
 
 curl -s -X POST http://121.43.48.184/api/v1/assessment/step \
+  -H "Content-Type: application/json" \
   -H "x-session-token: <token>" \
   -d '{"step":2,"data":{"age":28,"heightCm":165}}'
 
 curl -s -X POST http://121.43.48.184/api/v1/assessment/step \
+  -H "Content-Type: application/json" \
   -H "x-session-token: <token>" \
   -d '{"step":3,"data":{"weightKg":70,"targetWeightKg":60}}'
 
 curl -s -X POST http://121.43.48.184/api/v1/assessment/step \
+  -H "Content-Type: application/json" \
   -H "x-session-token: <token>" \
   -d '{"step":4,"data":{"activityLevel":"moderate"}}'
 
 # 3. 提交计算
 curl -s -X POST http://121.43.48.184/api/v1/assessment/submit \
+  -H "Content-Type: application/json" \
   -H "x-session-token: <token>"
 
 # 4. 查看免费结果（脱敏数据）
@@ -429,29 +459,46 @@ curl -s http://121.43.48.184/api/v1/results \
 
 ### 已支付的测试 Session
 
-部署后执行一次以下命令即可获得已支付的测试 token：
+每次部署后执行以下命令即可获得一个已支付的测试 token：
 
 ```bash
-# 1. 创建 session
+# 创建 session
 TOKEN=$(curl -s -X POST http://121.43.48.184/api/v1/session | grep -o '"sessionToken":"[^"]*"' | cut -d'"' -f4)
 
-# 2-5. 分步填表
-curl -s -X POST http://121.43.48.184/api/v1/assessment/step -H "x-session-token: $TOKEN" -d '{"step":1,"data":{"gender":"female","goal":"lose_weight"}}' > /dev/null
-curl -s -X POST http://121.43.48.184/api/v1/assessment/step -H "x-session-token: $TOKEN" -d '{"step":2,"data":{"age":28,"heightCm":165}}' > /dev/null
-curl -s -X POST http://121.43.48.184/api/v1/assessment/step -H "x-session-token: $TOKEN" -d '{"step":3,"data":{"weightKg":70,"targetWeightKg":60}}' > /dev/null
-curl -s -X POST http://121.43.48.184/api/v1/assessment/step -H "x-session-token: $TOKEN" -d '{"step":4,"data":{"activityLevel":"moderate"}}' > /dev/null
+# 分步填表（所有 POST 请求都需 Content-Type）
+curl -s -X POST http://121.43.48.184/api/v1/assessment/step \
+  -H "Content-Type: application/json" -H "x-session-token: $TOKEN" \
+  -d '{"step":1,"data":{"gender":"female","goal":"lose_weight"}}' > /dev/null
+curl -s -X POST http://121.43.48.184/api/v1/assessment/step \
+  -H "Content-Type: application/json" -H "x-session-token: $TOKEN" \
+  -d '{"step":2,"data":{"age":28,"heightCm":165}}' > /dev/null
+curl -s -X POST http://121.43.48.184/api/v1/assessment/step \
+  -H "Content-Type: application/json" -H "x-session-token: $TOKEN" \
+  -d '{"step":3,"data":{"weightKg":70,"targetWeightKg":60}}' > /dev/null
+curl -s -X POST http://121.43.48.184/api/v1/assessment/step \
+  -H "Content-Type: application/json" -H "x-session-token: $TOKEN" \
+  -d '{"step":4,"data":{"activityLevel":"moderate"}}' > /dev/null
 
-# 6. 提交
-curl -s -X POST http://121.43.48.184/api/v1/assessment/submit -H "x-session-token: $TOKEN" > /dev/null
+# 提交
+curl -s -X POST http://121.43.48.184/api/v1/assessment/submit \
+  -H "Content-Type: application/json" -H "x-session-token: $TOKEN" > /dev/null
 
-# 7. 支付
-curl -s -X POST http://121.43.48.184/api/v1/pay -H "x-session-token: $TOKEN" -d '{"planType":"monthly"}' > /dev/null
+# 支付
+curl -s -X POST http://121.43.48.184/api/v1/pay \
+  -H "Content-Type: application/json" -H "x-session-token: $TOKEN" \
+  -d '{"planType":"monthly"}' > /dev/null
 
-# 8. 查看完整结果
+# 查看完整结果
 echo "=== 付费后完整结果 ==="
 echo "Session Token: $TOKEN"
-curl -s http://121.43.48.184/api/v1/results -H "x-session-token: $TOKEN" | python3 -m json.tool 2>/dev/null || curl -s http://121.43.48.184/api/v1/results -H "x-session-token: $TOKEN"
+curl -s http://121.43.48.184/api/v1/results \
+  -H "x-session-token: $TOKEN" | python3 -m json.tool 2>/dev/null || \
+  curl -s http://121.43.48.184/api/v1/results -H "x-session-token: $TOKEN"
 ```
+
+> 💡 **本地已生成的测试 token：** `9daac383-3ba8-440f-955c-0859bcb0d8bf`  
+> 该 token 已完成完整填表 → 提交 → 支付全流程，可直接用于测试会员结果。  
+> 如需刷新，在本地或部署后按上述脚本重新生成即可。
 
 ---
 
