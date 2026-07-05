@@ -39,12 +39,57 @@ export const StrictStepDataSchema = StepDataSchema.superRefine((data, ctx) => {
 });
 
 /** 提交时必需的字段 */
-export const RequiredFieldsSchema = z.object({
-  gender: GenderEnum,
-  goal: GoalEnum,
-  age: z.number().int().min(10).max(120),
-  heightCm: z.number().min(50).max(250),
-  weightKg: z.number().min(20).max(500),
-  targetWeightKg: z.number().min(15).max(500),
-  activityLevel: ActivityLevelEnum,
-});
+export const RequiredFieldsSchema = z
+  .object({
+    gender: GenderEnum,
+    goal: GoalEnum,
+    age: z.number().int().min(10).max(120),
+    heightCm: z.number().min(50).max(250),
+    weightKg: z.number().min(20).max(500),
+    targetWeightKg: z.number().min(15).max(500),
+    activityLevel: ActivityLevelEnum,
+  })
+  .superRefine((data, ctx) => {
+    const { weightKg, targetWeightKg, goal } = data;
+
+    // 交叉校验：体重差不超过 200kg
+    if (
+      weightKg !== undefined &&
+      targetWeightKg !== undefined &&
+      Math.abs(targetWeightKg - weightKg) > 200
+    ) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['targetWeightKg'],
+        message: `目标体重与当前体重相差超过 200kg（当前 ${weightKg}kg，目标 ${targetWeightKg}kg）`,
+      });
+    }
+
+    // 语义校验：lose_weight 时目标应低于当前体重
+    if (
+      goal === 'lose_weight' &&
+      weightKg !== undefined &&
+      targetWeightKg !== undefined &&
+      targetWeightKg >= weightKg
+    ) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['targetWeightKg'],
+        message: `减重目标下，目标体重（${targetWeightKg}kg）应低于当前体重（${weightKg}kg）`,
+      });
+    }
+
+    // 语义校验：gain_muscle 时目标应高于当前体重
+    if (
+      goal === 'gain_muscle' &&
+      weightKg !== undefined &&
+      targetWeightKg !== undefined &&
+      targetWeightKg <= weightKg
+    ) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['targetWeightKg'],
+        message: `增肌目标下，目标体重（${targetWeightKg}kg）应高于当前体重（${weightKg}kg）`,
+      });
+    }
+  });

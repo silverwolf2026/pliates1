@@ -45,7 +45,9 @@
       "Bash(PGPASSWORD=1 psql -U postgres -lqt)",
       "Bash(npx prisma *)",
       "Bash(npm test *)",
-      "Bash(npm run *)"
+      "Bash(npm run *)",
+      "Bash(curl -s -v http://localhost:3001/api/v1/health)",
+      "Bash(git commit -m 'feat: 生产环境加固 — correlation ID / 限流 / cross-field 校验 *)"
     ],
     "additionalDirectories": [
       "d:\\ccvs\\pilates\\.claude"

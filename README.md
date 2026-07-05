@@ -519,6 +519,20 @@ curl -s http://121.43.48.184/api/v1/results \
 
 5. **前端页面**：Vue 3 的问卷页、结果页、支付页由 AI 生成，包含进度条、选项卡片、响应式布局。
 
+6. **架构审查与重构**：AI 对已有代码做了架构审查，发现了 7 个问题：
+   - `as any` 绕过类型安全 → 改为 `Prisma.AssessmentUpdateInput` 逐字段安全赋值
+   - 路由层堆积业务逻辑 → 抽取到 `services/assessmentService.ts`
+   - 常量可被运行时修改 → 加 `as const`
+   - 环境变量无运行时校验 → 接入 Zod fail-fast
+   - 函数重复（`getCategoryFromBMI`） → 统一引用
+   - 死代码 + 硬编码 → 删除未使用变量、接入实际参数
+   - 动态 `import()` → 改为顶层静态 import
+
+7. **容器化部署经验**：
+   - 首次使用 `node:20-alpine` 构建 Docker 镜像，运行时 Prisma 报错 `Failed to detect libssl/openssl version` → 改用 `node:20-bookworm-slim`（Debian 基础镜像，自带 OpenSSL）
+   - 多阶段构建：编译阶段安装全部依赖编译 TS → 生产阶段仅复制编译产物和 `--omit=dev` 依赖，镜像体积从 ~1.2GB 降到 ~350MB
+   - 国内拉取 Docker Hub 镜像遇网络问题 → 移除不可用的镜像加速器，直接拉取 Docker Hub 反而成功（阿里云 ECS 实测）
+
 ### 否决的 AI 方案
 
 **1. SQLite 替代方案被否决**  
@@ -529,6 +543,12 @@ AI 生成的 Dockerfile 首次使用了 `npx prisma migrate deploy` + migration 
 
 **3. Zod 校验器设计**  
 AI 初版将 Zod schema 直接放在路由文件中。人工重构为独立的 `schemas/` 目录，并将枚举类型抽取到 `common.ts` 复用。
+
+**4. Alpine 基础镜像被否决**  
+AI 最初推荐 `node:20-alpine` 作为生产镜像，实际部署时 Prisma 因缺少 OpenSSL 报错。经排查改用 `node:20-bookworm-slim`，问题解决。教训：AI 对基础镜像的兼容性判断不可靠，特别是涉及原生依赖（如 Prisma）时。
+
+**5. `as any` 类型逃逸**  
+AI 生成的 Prisma update 代码使用了 `data: updateData as any` 绕过类型检查。人工审查发现后要求改为类型安全的 `Prisma.AssessmentUpdateInput` 逐字段赋值。教训：任何 `as any` 都必须被标记和审查。
 
 ### 未覆盖的测试场景
 

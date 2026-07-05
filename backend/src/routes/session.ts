@@ -1,5 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { prisma } from '../db/prisma';
+import { sessionLimiter } from '../middleware/rateLimiter';
 
 const router = Router();
 
@@ -7,8 +8,9 @@ const router = Router();
  * POST /api/v1/session
  * 创建新的匿名会话（生成 User + sessionToken）
  * 幂等：如果 Header 带了有效 x-session-token 则返回已有用户
+ * 限流：每 IP 每 15 分钟最多 20 次
  */
-router.post('/', async (req: Request, res: Response) => {
+router.post('/', sessionLimiter, async (req: Request, res: Response) => {
   // 如果已有有效 token，复用
   const existingToken = req.headers['x-session-token'] as string | undefined;
   if (existingToken) {

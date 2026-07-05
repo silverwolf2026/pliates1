@@ -3,12 +3,14 @@ import cors from 'cors';
 import { env } from './config/env';
 import apiRouter from './routes';
 import { AppError } from './utils/errors';
+import { correlationId } from './middleware/correlationId';
 
 const app = express();
 
 // 中间件
 app.use(cors());
 app.use(express.json());
+app.use(correlationId); // 每个请求分配唯一 requestId
 
 // API 路由
 app.use('/api/v1', apiRouter);
@@ -22,8 +24,8 @@ app.use((_req, res) => {
 });
 
 // 全局错误处理
-app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
-  console.error('[Error]', err);
+app.use((err: Error, req: Request, res: Response, _next: NextFunction) => {
+  console.error(`[Error] requestId=${req.requestId}`, err);
 
   if (err instanceof AppError) {
     res.status(err.statusCode).json({
