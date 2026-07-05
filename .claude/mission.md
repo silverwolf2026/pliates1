@@ -15,7 +15,7 @@
 | 5 | 订阅鉴权 + 差异化返回 | P0 | ✅ | 非会员脱敏 vs 会员完整 |
 | 6 | 模拟支付回调 (/pay) | P0 | ✅ | 幂等设计 |
 | 7 | Zod 数据校验 | P0 | ✅ | 枚举/范围/非法值 |
-| 8 | 自动化测试 (61 个) | P0 | ✅ | 4 文件全覆盖 |
+| 8 | 自动化测试 (65 个) | P0 | ✅ | 4 文件全覆盖 |
 | 9 | 前端 (Vue 3) | P1 | ✅ | 基础可用，不做 UI 深度优化 |
 | 10 | **公网部署 (阿里云 ECS)** | **P0** | **✅** | 前后端 + PostgreSQL 已上线，http://121.43.48.184 |
 | 11 | **已支付测试 sessionId** | **P0** | **✅** | `9daac383-3ba8-440f-955c-0859bcb0d8bf` |
@@ -64,52 +64,31 @@
 | 分步保存 + 进度恢复 | `assessment.test.ts` | 13 | ✅ |
 | 鉴权差异化 + 脱敏 | `subscription.test.ts` | 11 | ✅ |
 | 支付流程端到端 | `paymentFlow.test.ts` | 5 | ✅ |
-| **总计** | | **61** | ✅ |
+| **总计** | | **65** | ✅ |
 
 ### 部署 & 交付物
 
 | 交付物 | 状态 | 操作 |
 |--------|------|------|
 | GitHub 仓库 | ✅ | https://github.com/silverwolf2026/pliates1 |
-| 公网 URL | 🟡 | 已部署过，待推送新版后重新部署 |
+| 公网 URL | ✅ | 最新版已部署到 http://121.43.48.184 |
 | 已支付测试 sessionId | ✅ | `9daac383-3ba8-440f-955c-0859bcb0d8bf` |
 | Schema 图 (Mermaid) | ✅ | 已添加到 README |
 | AI 使用复盘 | ✅ | 已补充架构审查 + 容器化部署案例 |
-| 一键 npm test | ✅ | 已配置 |
+| 一键 npm test | ✅ | 已配置（65 tests） |
 
 ---
 
-## 三、下一步行动计划
-
-### Phase 1: 公网部署 (P0)
-
-- [ ] 确定 ECS 配置 (OS / 安全组 / 域名)
-- [ ] 在 ECS 上安装 Node.js + PostgreSQL
-- [ ] 部署后端 + 数据库
-- [ ] 构建前端并配置 Nginx 托管
-- [ ] 测试全流程 (session → 问卷 → 提交 → 付费 → 结果)
-- [ ] 更新 README 中的线上链接
-
-### Phase 2: 完善交付文档 (P1)
-
-- [ ] README 添加 Mermaid Schema 图
-- [ ] README 补充已支付测试 sessionId
-- [ ] README 补充 AI 复盘案例
-
-### Phase 3: 可选加分
-
-- [ ] GitHub Actions CI（暂缓）
-- [ ] 前端视觉优化（暂缓）
-
----
-
-## 四、已知决策记录
+## 三、已知决策记录
 
 | 日期 | 决策 | 理由 |
 |------|------|------|
 | 2026-07-04 | 部署到阿里云 ECS | 国内访问快 |
 | 2026-07-04 | CI 暂缓 | 优先保证部署上线 |
 | 2026-07-04 | 前端保持现状 | 评审重点在后端 |
+| 2026-07-05 | 生产环境加固 | 加 correlation ID / rate limiter / cross-field 校验 |
+| 2026-07-05 | TypeScript 严格模式 | `as const` 类型收窄，避免 `tsc` 报错 |
+| 2026-07-05 | Docker Nginx 反向代理 | VITE_API_URL 用相对路径 `/api/v1` 适配生产环境 |
 
 ---
 
@@ -126,14 +105,10 @@
 | 5 | 业务逻辑在路由层 | `routes/assessment.ts` | 全部抽取到 `services/assessmentService.ts` |
 | 6 | 常量可被运行时修改 | `services/healthCalculator.ts` | `ACTIVITY_MULTIPLIERS` + `GOAL_CALORIE_ADJUSTMENT` 加 `as const` |
 | 7 | 环境变量无运行时校验 | `config/env.ts` | 引入 Zod schema，启动时 fail fast |
-
-### 🟡 已处理
-
-| # | 问题 | 说明 |
-|---|------|------|
-| 1 | 没有请求追踪 ID | ✅ 已加 `correlationId` 中间件，`X-Request-Id` 响应头 + 日志 |
-| 2 | 没有限流 | ✅ 已加 `express-rate-limit`，session 创建接口 20次/15分钟 |
-| 3 | `targetWeightKg` 与 `weightKg` 无业务关联校验 | ✅ Zod `superRefine` 校验相差 ≤200kg + 目标语义一致性 |
+| 8 | `as const` 后 `string` 索引报错 | `services/healthCalculator.ts` | 导出 `ActivityLevel` / `Goal` 联合类型，函数参数收窄 |
+| 9 | 无请求追踪 ID | `middleware/correlationId.ts` | 新建 correlationId 中间件 |
+| 10 | 无限流 | `middleware/rateLimiter.ts` | session 创建接口 20次/15分钟 |
+| 11 | 无 cross-field 校验 | `schemas/assessment.ts` | `superRefine` 校验体重差 + 目标语义 |
 
 ### 🟡 可推后
 
