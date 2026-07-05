@@ -20,7 +20,7 @@
 | 10 | **公网部署 (阿里云 ECS)** | **P0** | **✅** | 前后端 + PostgreSQL 已上线，http://121.43.48.184 |
 | 11 | **已支付测试 sessionId** | **P0** | **✅** | `9daac383-3ba8-440f-955c-0859bcb0d8bf` |
 | 12 | **数据库 Schema 图** | **P1** | **✅** | Mermaid ER 图已添加到 README |
-| 13 | **AI 使用复盘补充** | **P1** | **🟡** | 已有初版，需补充案例 |
+| 13 | **AI 使用复盘补充** | **P1** | **✅** | 已补充架构审查 + 容器化部署经验 |
 | 14 | GitHub Actions CI | P2-加分 | ⏸️ | 暂缓，部署优先 |
 | 15 | 前端 UI 优化 | P2 | ⏸️ | 保持现状，不做 |
 
@@ -74,7 +74,7 @@
 | 公网 URL | 🟡 | 已部署过，待推送新版后重新部署 |
 | 已支付测试 sessionId | ✅ | `9daac383-3ba8-440f-955c-0859bcb0d8bf` |
 | Schema 图 (Mermaid) | ✅ | 已添加到 README |
-| AI 使用复盘 | 🟡 | 已有基础内容，可补充 |
+| AI 使用复盘 | ✅ | 已补充架构审查 + 容器化部署案例 |
 | 一键 npm test | ✅ | 已配置 |
 
 ---
@@ -127,15 +127,20 @@
 | 6 | 常量可被运行时修改 | `services/healthCalculator.ts` | `ACTIVITY_MULTIPLIERS` + `GOAL_CALORIE_ADJUSTMENT` 加 `as const` |
 | 7 | 环境变量无运行时校验 | `config/env.ts` | 引入 Zod schema，启动时 fail fast |
 
-### 🟡 待办（可推后）
+### 🟡 已处理
+
+| # | 问题 | 说明 |
+|---|------|------|
+| 1 | 没有请求追踪 ID | ✅ 已加 `correlationId` 中间件，`X-Request-Id` 响应头 + 日志 |
+| 2 | 没有限流 | ✅ 已加 `express-rate-limit`，session 创建接口 20次/15分钟 |
+| 3 | `targetWeightKg` 与 `weightKg` 无业务关联校验 | ✅ Zod `superRefine` 校验相差 ≤200kg + 目标语义一致性 |
+
+### 🟡 可推后
 
 | # | 问题 | 说明 |
 |---|------|------|
 | 1 | 没有 Repository 层 | 当前 service 直接调 prisma，短期内可接受 |
 | 2 | 测试依赖真实 PostgreSQL | 长期可用 testcontainers 解决 |
-| 3 | 没有请求追踪 ID | 生产环境加 correlation ID middleware |
-| 4 | 没有限流 | 生产环境 session 创建应加 rate limiter |
-| 5 | `targetWeightKg` 与 `weightKg` 无业务关联校验 | Zod 层可加前后端交叉校验（如相差不超过 200kg） |
 
 ---
 

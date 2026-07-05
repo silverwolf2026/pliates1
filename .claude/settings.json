@@ -47,7 +47,15 @@
       "Bash(npm test *)",
       "Bash(npm run *)",
       "Bash(curl -s -v http://localhost:3001/api/v1/health)",
-      "Bash(git commit -m 'feat: 生产环境加固 — correlation ID / 限流 / cross-field 校验 *)"
+      "Bash(git commit -m 'feat: 生产环境加固 — correlation ID / 限流 / cross-field 校验 *)",
+      "Bash(VITE_API_URL=/api/v1 npm run build)",
+      "Bash(git commit -m 'fix: Docker 构建时 VITE_API_URL 设为 /api/v1，适配 Nginx 反向代理 *)",
+      "Bash(curl -s http://localhost:5173/)",
+      "Bash(curl -s -v -X POST http://localhost:3001/api/v1/session)",
+      "Bash(netstat -aon)",
+      "Bash(awk '{print $NF}')",
+      "Bash(xargs -I{} taskkill //F //PID {})",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:5173/)"
     ],
     "additionalDirectories": [
       "d:\\ccvs\\pilates\\.claude"

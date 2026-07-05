@@ -56,10 +56,17 @@ export const useAssessmentStore = defineStore('assessment', () => {
         }
       } catch {
         // Token 无效，重新创建
+        sessionStorage.removeItem('sessionToken');
+        sessionStorage.removeItem('userId');
       }
     }
     // 创建新会话
-    await api.createSession();
+    try {
+      await api.createSession();
+    } catch (e: any) {
+      error.value = e.response?.data?.message || 'Failed to connect to server. Please refresh and try again.';
+      console.error('Session creation failed:', e);
+    }
   }
 
   // 保存当前步
