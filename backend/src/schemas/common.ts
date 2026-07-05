@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-export const GenderEnum = z.enum(['male', 'female', 'other']);
+export const GenderEnum = z.enum(['male', 'female']);
 export type Gender = z.infer<typeof GenderEnum>;
 
 export const GoalEnum = z.enum([

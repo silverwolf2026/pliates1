@@ -3,6 +3,7 @@ import { prisma } from '../db/prisma';
 import { sessionMiddleware } from '../middleware/session';
 import { NotFoundError } from '../utils/errors';
 import { hasActiveSubscription, sanitizeResults } from '../services/subscriptionGuard';
+import { getBMICategory } from '../services/healthCalculator';
 
 const router = Router();
 
@@ -36,7 +37,7 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
 
     const rawResults: Record<string, unknown> = {
       bmi: assessment.bmi,
-      bmiCategory: assessment.bmi ? getCategoryFromBMI(assessment.bmi) : null,
+      bmiCategory: assessment.bmi ? getBMICategory(assessment.bmi) : null,
       dailyCalories: assessment.dailyCalories,
       predictedDate: assessment.predictedDate,
       isPremium: isActive,
@@ -72,16 +73,5 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
     next(error);
   }
 });
-
-/**
- * 获取已被 submit 持久化的结果
- * （方法提取，供 submit 后直接返回使用）
- */
-export function getCategoryFromBMI(bmi: number): string {
-  if (bmi < 18.5) return 'underweight';
-  if (bmi < 25) return 'normal';
-  if (bmi < 30) return 'overweight';
-  return 'obese';
-}
 
 export default router;

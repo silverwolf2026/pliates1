@@ -19,7 +19,6 @@ onMounted(async () => {
 const genderOptions = [
   { value: 'female', label: 'Female', emoji: '👩' },
   { value: 'male', label: 'Male', emoji: '👨' },
-  { value: 'other', label: 'Other', emoji: '🧑' },
 ];
 
 const goalOptions = [
@@ -38,10 +37,16 @@ const activityOptions = [
 ];
 
 async function handleNext() {
+  store.clearStepErrors();
   saving.value = true;
   transitionDirection.value = 'next';
   try {
-    await store.nextStep();
+    const ok = await store.nextStep();
+    if (!ok) {
+      // 校验未通过，保持当前步
+      saving.value = false;
+      return;
+    }
   } catch {
     // error shown in store
   } finally {
@@ -50,6 +55,7 @@ async function handleNext() {
 }
 
 function handlePrev() {
+  store.clearStepErrors();
   transitionDirection.value = 'prev';
   store.prevStep();
 }
@@ -111,13 +117,14 @@ function isSelected(field: string, value: string | number) {
               v-for="opt in genderOptions"
               :key="opt.value"
               class="option-btn"
-              :class="{ selected: isSelected('gender', opt.value) }"
-              @click="selectOption('gender', opt.value)"
+              :class="{ selected: isSelected('gender', opt.value), error: store.stepErrors['gender'] }"
+              @click="selectOption('gender', opt.value); store.clearStepErrors()"
             >
               <span class="option-emoji">{{ opt.emoji }}</span>
               <span class="option-label">{{ opt.label }}</span>
             </button>
           </div>
+          <div v-if="store.stepErrors['gender']" class="field-error">{{ store.stepErrors['gender'] }}</div>
         </div>
 
         <div class="section">
@@ -127,14 +134,15 @@ function isSelected(field: string, value: string | number) {
               v-for="opt in goalOptions"
               :key="opt.value"
               class="option-btn card"
-              :class="{ selected: isSelected('goal', opt.value) }"
-              @click="selectOption('goal', opt.value)"
+              :class="{ selected: isSelected('goal', opt.value), error: store.stepErrors['goal'] }"
+              @click="selectOption('goal', opt.value); store.clearStepErrors()"
             >
               <span class="option-emoji">{{ opt.emoji }}</span>
               <span class="option-label">{{ opt.label }}</span>
               <span class="option-desc">{{ opt.desc }}</span>
             </button>
           </div>
+          <div v-if="store.stepErrors['goal']" class="field-error">{{ store.stepErrors['goal'] }}</div>
         </div>
       </template>
 
@@ -149,10 +157,12 @@ function isSelected(field: string, value: string | number) {
             v-model.number="store.formData.age"
             type="number"
             class="form-input"
+            :class="{ error: store.stepErrors['age'] }"
             placeholder="e.g. 28"
             min="10"
             max="120"
           />
+          <div v-if="store.stepErrors['age']" class="field-error">{{ store.stepErrors['age'] }}</div>
         </div>
 
         <div class="section">
@@ -161,11 +171,13 @@ function isSelected(field: string, value: string | number) {
             v-model.number="store.formData.heightCm"
             type="number"
             class="form-input"
+            :class="{ error: store.stepErrors['heightCm'] }"
             placeholder="e.g. 165"
             min="50"
             max="250"
             step="0.1"
           />
+          <div v-if="store.stepErrors['heightCm']" class="field-error">{{ store.stepErrors['heightCm'] }}</div>
         </div>
       </template>
 
@@ -180,11 +192,13 @@ function isSelected(field: string, value: string | number) {
             v-model.number="store.formData.weightKg"
             type="number"
             class="form-input"
+            :class="{ error: store.stepErrors['weightKg'] }"
             placeholder="e.g. 70"
             min="20"
             max="500"
             step="0.1"
           />
+          <div v-if="store.stepErrors['weightKg']" class="field-error">{{ store.stepErrors['weightKg'] }}</div>
         </div>
 
         <div class="section">
@@ -193,11 +207,13 @@ function isSelected(field: string, value: string | number) {
             v-model.number="store.formData.targetWeightKg"
             type="number"
             class="form-input"
+            :class="{ error: store.stepErrors['targetWeightKg'] }"
             placeholder="e.g. 60"
             min="15"
             max="500"
             step="0.1"
           />
+          <div v-if="store.stepErrors['targetWeightKg']" class="field-error">{{ store.stepErrors['targetWeightKg'] }}</div>
         </div>
       </template>
 
@@ -212,14 +228,15 @@ function isSelected(field: string, value: string | number) {
               v-for="opt in activityOptions"
               :key="opt.value"
               class="option-btn card"
-              :class="{ selected: isSelected('activityLevel', opt.value) }"
-              @click="selectOption('activityLevel', opt.value)"
+              :class="{ selected: isSelected('activityLevel', opt.value), error: store.stepErrors['activityLevel'] }"
+              @click="selectOption('activityLevel', opt.value); store.clearStepErrors()"
             >
               <span class="option-emoji">{{ opt.emoji }}</span>
               <span class="option-label">{{ opt.label }}</span>
               <span class="option-desc">{{ opt.desc }}</span>
             </button>
           </div>
+          <div v-if="store.stepErrors['activityLevel']" class="field-error">{{ store.stepErrors['activityLevel'] }}</div>
         </div>
       </template>
 
@@ -344,6 +361,23 @@ function isSelected(field: string, value: string | number) {
   font-size: 14px;
   color: #888;
   margin: 0 0 20px;
+}
+
+.field-error {
+  font-size: 13px;
+  color: #e74c3c;
+  margin-top: 6px;
+  font-weight: 500;
+}
+
+.option-btn.error {
+  border-color: #e74c3c;
+  background: #fff5f5;
+}
+
+.form-input.error {
+  border-color: #e74c3c;
+  background: #fff5f5;
 }
 
 .section {

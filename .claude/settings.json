@@ -19,7 +19,25 @@
       "Bash(cmd //c start /B /WAIT \"d:\\\\ccvs\\\\pilates\\\\start.bat\")",
       "Bash(git init *)",
       "Bash(git add *)",
-      "Bash(git commit -m 'Initial commit: Pilates Health Assessment *)"
+      "Bash(git commit -m 'Initial commit: Pilates Health Assessment *)",
+      "Bash(git remote *)",
+      "Bash(git branch *)",
+      "Bash(git push *)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" --connect-timeout 5 https://github.com)",
+      "Bash(which ssh *)",
+      "Read(//c/Users/niuser/**)",
+      "Bash(gh auth *)",
+      "Bash(git config *)",
+      "Bash(mkdir -p ~/.ssh)",
+      "Bash(ssh-keyscan github.com)",
+      "Bash(mkdir -p .claude/skills)",
+      "Bash(mkdir -p .claude/agents)",
+      "WebSearch",
+      "Bash(curl -s http://121.43.48.184/api/v1/health)",
+      "Bash(curl -s -X POST http://121.43.48.184/api/v1/session)"
+    ],
+    "additionalDirectories": [
+      "d:\\ccvs\\pilates\\.claude"
     ]
   }
 }

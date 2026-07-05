@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
+import { prisma } from '../db/prisma';
 import { UnauthorizedError } from '../utils/errors';
 
 /**
@@ -28,7 +29,6 @@ export async function sessionMiddleware(
   }
 
   try {
-    const { prisma } = await import('../db/prisma');
     const user = await prisma.user.findUnique({
       where: { sessionToken: token },
     });

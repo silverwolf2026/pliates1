@@ -20,6 +20,9 @@ export const useAssessmentStore = defineStore('assessment', () => {
   const results = ref<Record<string, unknown> | null>(null);
   const subscriptionStatus = ref<string>('none');
 
+  // 逐步骤校验错误 { fieldName: 'error message' }
+  const stepErrors = ref<Record<string, string>>({});
+
   // 问卷数据
   const formData = ref<Record<string, unknown>>({
     gender: undefined,
@@ -82,12 +85,16 @@ export const useAssessmentStore = defineStore('assessment', () => {
     }
   }
 
-  // 下一步
-  async function nextStep() {
+  // 下一步（先校验当前步，通过后才保存并前进）
+  async function nextStep(): Promise<boolean> {
+    if (!validateCurrentStep()) {
+      return false;
+    }
     await saveCurrentStep();
     if (currentStep.value < STEPS.length - 1) {
       currentStep.value++;
     }
+    return true;
   }
 
   // 上一步
@@ -159,11 +166,41 @@ export const useAssessmentStore = defineStore('assessment', () => {
     return stepFields[stepIndex] || [];
   }
 
+  // 逐步骤校验：检查当前步所有必填字段
+  function validateCurrentStep(): boolean {
+    stepErrors.value = {};
+    const fields = getStepFields(currentStep.value);
+    const labels: Record<string, string> = {
+      gender: 'Gender',
+      goal: 'Goal',
+      age: 'Age',
+      heightCm: 'Height',
+      weightKg: 'Current weight',
+      targetWeightKg: 'Target weight',
+      activityLevel: 'Activity level',
+    };
+    let valid = true;
+    for (const field of fields) {
+      const value = formData.value[field];
+      if (value === undefined || value === null || value === '') {
+        stepErrors.value[field] = `Please select your ${labels[field] || field}`;
+        valid = false;
+      }
+    }
+    return valid;
+  }
+
+  // 清空步骤校验错误
+  function clearStepErrors() {
+    stepErrors.value = {};
+  }
+
   return {
     currentStep, maxStepReached, isCompleted, loading, error,
-    results, subscriptionStatus, formData,
+    results, subscriptionStatus, formData, stepErrors,
     currentStepDef, totalSteps, progressPercent, STEPS,
     initSession, saveCurrentStep, nextStep, prevStep,
     submitAll, fetchResults, makePayment,
+    validateCurrentStep, clearStepErrors,
   };
 });

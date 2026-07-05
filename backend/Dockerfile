@@ -1,18 +1,35 @@
-FROM node:20-alpine
+# Build stage
+FROM node:20-bookworm-slim AS build
 
 WORKDIR /app
 
-# 安装依赖 (含 devDependencies — prisma CLI 需要)
+RUN apt-get update -qq && apt-get install -y -qq openssl && apt-get clean
+
 COPY package.json package-lock.json* ./
 RUN npm ci
 
-# Prisma 生成 client
 COPY prisma ./prisma
 RUN npx prisma generate
 
-# 源码
-COPY . .
+COPY tsconfig.json ./
+COPY src ./src
+RUN npm run build
+
+# Production stage
+FROM node:20-bookworm-slim
+
+WORKDIR /app
+
+RUN apt-get update -qq && apt-get install -y -qq openssl && apt-get clean
+
+COPY package.json package-lock.json* ./
+RUN npm ci --omit=dev
+
+COPY prisma ./prisma
+RUN npx prisma generate
+
+COPY --from=build /app/dist ./dist
 
 EXPOSE 3001
 
-CMD ["npm", "run", "dev"]
+CMD ["node", "dist/index.js"]

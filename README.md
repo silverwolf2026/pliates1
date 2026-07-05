@@ -1,6 +1,8 @@
 # Pilates Health Assessment
 
 > 健康测评系统 — 支持分步问卷、服务端计算、订阅鉴权、差异化结果展示的完整 Funnel 架构
+>
+> 🌐 **线上地址：** [http://121.43.48.184](http://121.43.48.184)
 
 参考竞品：[BetterMe Quiz Funnel](https://betterme-pilates.com/first-page-brand-palette?flow=2117)
 
@@ -36,27 +38,41 @@
 
 ## 快速启动
 
-### 前置条件
-
-- [Node.js](https://nodejs.org/) 20+
-- [PostgreSQL](https://www.postgresql.org/) 16+（安装时设置密码，启动服务）
-- 创建数据库 `pilates_health`
+### 一键 Docker 部署（推荐）
 
 ```bash
-# 创建数据库（如果还没有）
-psql -U postgres -c "CREATE DATABASE pilates_health;"
+# 1. 安装 Docker（如果未安装）
+curl -fsSL https://get.docker.com | sudo sh
+
+# 2. 启动全部服务
+sudo docker compose up -d
+# → 后端: http://localhost:3001
+# → 前端: http://localhost:80
 ```
 
-### 一键启动
+### 本地开发启动
 
-**双击 `start.bat`**，脚本会自动：
+**前置条件：** [Node.js](https://nodejs.org/) 20+、[PostgreSQL](https://www.postgresql.org/) 16+
 
-1. ✅ 检查 Node.js 和 PostgreSQL
-2. ✅ 运行数据库迁移 (`prisma db push`)
-3. ✅ 安装依赖（如需要）
-4. ✅ 启动后端 → http://localhost:3001
-5. ✅ 启动前端 → http://localhost:5173
-6. ✅ 自动打开浏览器
+```bash
+# 创建数据库
+psql -U postgres -c "CREATE DATABASE pilates_health;"
+
+# 双击 `start.bat` 一键启动
+```
+
+或手动分步启动：
+
+```bash
+cd backend
+npm install
+npx prisma db push
+npm run dev     # → http://localhost:3001
+
+cd ../frontend
+npm install
+npm run dev     # → http://localhost:5173
+```
 
 > ⚠️ 如果 `start.bat` 里的 PostgreSQL 服务名与你的版本不一致，请手动编辑 bat 中的 `net start postgresql-x64-18` 改为你的版本号。
 
@@ -366,57 +382,75 @@ npx vitest run tests/healthCalculator.test.ts
 ## cURL 快速测试
 
 以下命令可用于验证完整的 API 流程：
+> ⚠️ 将 `121.43.48.184` 替换为你的服务器 IP，或使用 `localhost` 本地测试。
 
 ```bash
 # 1. 创建会话
-curl -s -X POST http://localhost:3001/api/v1/session
+curl -s -X POST http://121.43.48.184/api/v1/session
 
 # 记下返回的 sessionToken，替换下面的 <token>
 
 # 2. 分步保存
-curl -s -X POST http://localhost:3001/api/v1/assessment/step \
+curl -s -X POST http://121.43.48.184/api/v1/assessment/step \
   -H "Content-Type: application/json" \
   -H "x-session-token: <token>" \
   -d '{"step":1,"data":{"gender":"female","goal":"lose_weight"}}'
 
-curl -s -X POST http://localhost:3001/api/v1/assessment/step \
+curl -s -X POST http://121.43.48.184/api/v1/assessment/step \
   -H "x-session-token: <token>" \
   -d '{"step":2,"data":{"age":28,"heightCm":165}}'
 
-curl -s -X POST http://localhost:3001/api/v1/assessment/step \
+curl -s -X POST http://121.43.48.184/api/v1/assessment/step \
   -H "x-session-token: <token>" \
   -d '{"step":3,"data":{"weightKg":70,"targetWeightKg":60}}'
 
-curl -s -X POST http://localhost:3001/api/v1/assessment/step \
+curl -s -X POST http://121.43.48.184/api/v1/assessment/step \
   -H "x-session-token: <token>" \
   -d '{"step":4,"data":{"activityLevel":"moderate"}}'
 
 # 3. 提交计算
-curl -s -X POST http://localhost:3001/api/v1/assessment/submit \
+curl -s -X POST http://121.43.48.184/api/v1/assessment/submit \
   -H "x-session-token: <token>"
 
 # 4. 查看免费结果（脱敏数据）
-curl -s http://localhost:3001/api/v1/results \
+curl -s http://121.43.48.184/api/v1/results \
   -H "x-session-token: <token>"
 
 # 5. 模拟支付
-curl -s -X POST http://localhost:3001/api/v1/pay \
+curl -s -X POST http://121.43.48.184/api/v1/pay \
   -H "Content-Type: application/json" \
   -H "x-session-token: <token>" \
   -d '{"planType":"monthly"}'
 
 # 6. 查看付费结果（完整数据）
-curl -s http://localhost:3001/api/v1/results \
+curl -s http://121.43.48.184/api/v1/results \
   -H "x-session-token: <token>"
 ```
 
 ### 已支付的测试 Session
 
-在浏览器中完成一次支付后，`sessionToken` 保存在浏览器 SessionStorage 中。你也可以通过 API 获得一个已支付的 session：
+部署后执行一次以下命令即可获得已支付的测试 token：
 
 ```bash
-# 创建 session → 填写所有步骤 → submit → pay
-# 然后查看结果即为付费版完整数据
+# 1. 创建 session
+TOKEN=$(curl -s -X POST http://121.43.48.184/api/v1/session | grep -o '"sessionToken":"[^"]*"' | cut -d'"' -f4)
+
+# 2-5. 分步填表
+curl -s -X POST http://121.43.48.184/api/v1/assessment/step -H "x-session-token: $TOKEN" -d '{"step":1,"data":{"gender":"female","goal":"lose_weight"}}' > /dev/null
+curl -s -X POST http://121.43.48.184/api/v1/assessment/step -H "x-session-token: $TOKEN" -d '{"step":2,"data":{"age":28,"heightCm":165}}' > /dev/null
+curl -s -X POST http://121.43.48.184/api/v1/assessment/step -H "x-session-token: $TOKEN" -d '{"step":3,"data":{"weightKg":70,"targetWeightKg":60}}' > /dev/null
+curl -s -X POST http://121.43.48.184/api/v1/assessment/step -H "x-session-token: $TOKEN" -d '{"step":4,"data":{"activityLevel":"moderate"}}' > /dev/null
+
+# 6. 提交
+curl -s -X POST http://121.43.48.184/api/v1/assessment/submit -H "x-session-token: $TOKEN" > /dev/null
+
+# 7. 支付
+curl -s -X POST http://121.43.48.184/api/v1/pay -H "x-session-token: $TOKEN" -d '{"planType":"monthly"}' > /dev/null
+
+# 8. 查看完整结果
+echo "=== 付费后完整结果 ==="
+echo "Session Token: $TOKEN"
+curl -s http://121.43.48.184/api/v1/results -H "x-session-token: $TOKEN" | python3 -m json.tool 2>/dev/null || curl -s http://121.43.48.184/api/v1/results -H "x-session-token: $TOKEN"
 ```
 
 ---

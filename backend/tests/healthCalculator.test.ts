@@ -158,50 +158,34 @@ describe('calculateDailyCalories', () => {
 
 describe('predictTargetDate', () => {
   it('returns a future date for weight loss', () => {
-    const date = predictTargetDate(80, 70, 1800, 1600);
+    // TDEE = 1600 * 1.55 (moderate equivalent) = 2480
+    const date = predictTargetDate(80, 70, 1800, 2480);
     expect(date).not.toBeNull();
     expect(date!.getTime()).toBeGreaterThan(Date.now());
   });
 
   it('returns null when target weight equals current weight', () => {
-    const date = predictTargetDate(70, 70, 1800, 1500);
+    const date = predictTargetDate(70, 70, 1800, 2325);
     expect(date).toBeNull();
   });
 
   it('returns null when weight difference is very small', () => {
-    const date = predictTargetDate(70.2, 70, 1800, 1500);
+    const date = predictTargetDate(70.2, 70, 1800, 2325);
     expect(date).toBeNull();
   });
 
   it('returns null when calorie gap is zero or negative', () => {
-    // 摄入 >= 消耗 → 无法预测
-    const date = predictTargetDate(80, 70, 3000, 1500);
+    // 摄入 >= 消耗 → 无法预测, TDEE = 1500 * 1.55 = 2325
+    const date = predictTargetDate(80, 70, 3000, 2325);
     expect(date).toBeNull();
   });
 
   it('returns null for prediction beyond 10 years', () => {
     // 极小的热量差 + 很大体重差
-    const date = predictTargetDate(150, 50, 1600, 1500);
-    // calorieGap ≈ 1500*1.55 - 1600 = 725, totalKcal = 100*7700 = 770000
-    // days = ceil(770000/725) ≈ 1062 (< 3650, so should still return a date)
-    // Let me use a more extreme case
-    const date2 = predictTargetDate(200, 50, 1550, 1500);
-    // calorieGap ≈ 1500*1.55 - 1550 = 775, totalKcal = 150*7700 = 1155000
-    // days = ceil(1155000/775) ≈ 1490 (< 3650)
-    // Hmm, let's think of a case that truly exceeds 10 years
-    // 10 years = 3650 days. If totalKcal / calorieGap > 3650
-    // totalKcal > 3650 * calorieGap
-    // 要满足: 体重差*7700 > 3650 * (TDEE - dailyCalories)
-    // → weightDiff > 3650/7700 * (BMR*1.55 - dailyCalories)
-    // → weightDiff > 0.474 * (some positive small number)
-    // If TDEE ≈ dailyCalories, any weight diff works.
-    // But we already handle small gap case above.
-    // Let me make a case where calorieGap is very small
     // TDEE = 1500 * 1.55 = 2325, dailyCalories = 2300 → gap = 25
-    // totalKcal = 100 * 7700 = 770000
-    // days = 770000/25 = 30800 > 3650 → null
-    const date3 = predictTargetDate(170, 70, 2300, 1500);
-    expect(date3).toBeNull();
+    // totalKcal = 100 * 7700 = 770000 → days = 770000/25 = 30800 > 3650 → null
+    const date = predictTargetDate(170, 70, 2300, 2325);
+    expect(date).toBeNull();
   });
 });
 

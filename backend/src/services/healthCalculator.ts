@@ -7,20 +7,20 @@
  * - 目标预测日期: 基于热量差估算
  */
 
-export const ACTIVITY_MULTIPLIERS: Record<string, number> = {
+export const ACTIVITY_MULTIPLIERS = {
   sedentary: 1.2,
   light: 1.375,
   moderate: 1.55,
   heavy: 1.725,
   extreme: 1.9,
-};
+} as const;
 
-export const GOAL_CALORIE_ADJUSTMENT: Record<string, number> = {
+export const GOAL_CALORIE_ADJUSTMENT = {
   lose_weight: -500,
   gain_muscle: 300,
   maintain: 0,
   improve_flexibility: 0,
-};
+} as const;
 
 export interface CalculatorInput {
   gender: string;
@@ -102,25 +102,24 @@ export function calculateDailyCalories(
 /**
  * 预测目标达成日期
  * 假设 ~7700 kcal ≈ 1kg 脂肪
- * 返回 null 当目标体重 ≥ 当前体重且目标是减重，或目标 ≤ 当前体重且目标是增肌
- * 或当体重差接近 0 时
+ * 返回 null 当：
+ * - 目标体重与当前体重的差 < 0.5kg
+ * - 每日热量差 ≤ 0（摄入 ≥ 消耗）
+ * - 预测天数超过 10 年
  */
 export function predictTargetDate(
   currentWeightKg: number,
   targetWeightKg: number,
   dailyCalories: number,
-  bmr: number,
+  tdee: number,
 ): Date | null {
   const weightDiff = currentWeightKg - targetWeightKg;
 
   // 体重差太小 → 无需预测
   if (Math.abs(weightDiff) < 0.5) return null;
 
-  // 每日实际热量差（相对于 BMR 的差值）
-  const dailyDeficit = bmr - (dailyCalories - 500); // 调整后的赤字计算
-  // 更准确：比较当前 TDEE 与目标摄入
-  const totalDailyEnergyExpenditure = bmr * 1.55; // 取 moderate 水平估计
-  const calorieGap = totalDailyEnergyExpenditure - dailyCalories;
+  // 每日热量差 = TDEE - 每日摄入
+  const calorieGap = tdee - dailyCalories;
 
   if (calorieGap <= 0) return null; // 无热量差 → 无法预测
 
@@ -149,11 +148,13 @@ export function calculateHealth(input: CalculatorInput): CalculatorResult {
     input.goal,
   );
   const bmr = calculateBMR(input.gender, input.weightKg, input.heightCm, input.age);
+  const activityMultiplier = ACTIVITY_MULTIPLIERS[input.activityLevel] ?? ACTIVITY_MULTIPLIERS.sedentary;
+  const tdee = bmr * activityMultiplier;
   const predictedDate = predictTargetDate(
     input.weightKg,
     input.targetWeightKg,
     dailyCalories,
-    bmr,
+    tdee,
   );
 
   return { bmi, bmiCategory, dailyCalories, predictedDate };
